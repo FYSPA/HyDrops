@@ -15,6 +15,7 @@ public class ModRegistry {
     private final ItemManager itemManager;
     private final WorldManager worldManager;
 
+
     public ModRegistry(LootManager loot, ZoneManager zone, ItemManager item, WorldManager worldManager) {
         this.lootManager = loot;
         this.zoneManager = zone;
@@ -27,4 +28,6 @@ public class ModRegistry {
         registry.registerCommand(new ItemCollection(itemManager));
         System.out.println("[ModRegistry] Todos los comandos han sido registrados.");
     }
+
+
 }

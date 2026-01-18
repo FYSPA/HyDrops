@@ -27,6 +27,11 @@ public class ListLootCmd extends AbstractCommand {
     }
 
     @Override
+    protected boolean canGeneratePermission() {
+        return false; // Desactiva el candado automático. ¡Público para todos!
+    }
+
+    @Override
     @Nonnull
     protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
         Map<String, List<LootEntry>> allTables = lootManager.getLootTables();

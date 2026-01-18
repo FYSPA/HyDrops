@@ -1,80 +1,80 @@
 package dev.yh.managers;
 
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import dev.yh.utils.ItemUtils;
 
-import java.lang.reflect.Method;
 import java.util.List;
 
 public class WorldManager {
 
-    public void spawnPhysicalDrop(World world, double x, double z, List<String> itemStrings) {
-        if (world == null || itemStrings.isEmpty()) return;
+    private static final WorldManager instance = new WorldManager();
+    public static WorldManager getInstance() { return instance; }
 
-        // Buscamos la altura (Y) + 3 bloques para que caigan
-        double y = getHighestBlockY(world, (int) x, (int) z) + 3.0;
-        Vector3d position = new Vector3d(x + 0.5, y, z + 0.5);
+    // Configuración: ¿Cuántos items máximo por montoncito visual?
+    private static final int MAX_ITEMS_PER_DROP = 3;
+    // Configuración: ¿Qué tan esparcidos? (en bloques)
+    private static final double SPREAD_RADIUS = 2.0;
 
-        for (String entry : itemStrings) {
+    public void spawnPhysicalDrop(World world, double x, double z, List<String> itemStrings, Player playerContext) {
+        int groundY = getHighestBlockY(world, (int) x, (int) z);
+        // Elevamos un poco más la altura (Y+2) para que caigan mejor
+        Vector3d spawnPos = new Vector3d(x + 0.5, groundY + 2.0, z + 0.5);
+
+        world.execute(() -> {
             try {
-                String[] parts = entry.split("x ");
-                if (parts.length < 2) continue;
+                Store<EntityStore> store = playerContext.getReference().getStore();
 
-                int quantity = Integer.parseInt(parts[0]);
-                String itemId = parts[1].trim();
+                for (String entry : itemStrings) {
+                    String[] parts = entry.split("x ");
+                    if (parts.length < 2) continue;
 
-                // Crear el ItemStack
-                ItemStack stack = new ItemStack(itemId, quantity);
+                    int totalQuantity = Integer.parseInt(parts[0]);
+                    String itemId = parts[1].trim();
 
-                if (stack.isValid() && !stack.isEmpty()) {
-                    // LLAMADA DINÁMICA: Intentamos spawnear el item
-                    dropItemStackSafely(world, position, stack);
+                    // --- LÓGICA DE DIVISIÓN DE STACKS ---
+                    // Mientras nos queden items por soltar...
+                    while (totalQuantity > 0) {
+                        // Decidimos cuánto soltar en este montoncito
+                        // Tomamos el mínimo entre lo que queda y el máximo permitido (ej: 3)
+                        int batchSize = Math.min(totalQuantity, MAX_ITEMS_PER_DROP);
+
+                        // Restamos al total
+                        totalQuantity -= batchSize;
+
+                        // Creamos el stack pequeño
+                        ItemStack stack = new ItemStack(itemId, batchSize);
+
+                        if (stack.isValid() && !stack.isEmpty()) {
+                            // Llamamos a la utilidad con Dispersión
+                            ItemUtils.dropItem(store, stack, spawnPos, SPREAD_RADIUS);
+                        }
+                    }
                 }
+
             } catch (Exception e) {
-                System.out.println("[WorldManager] Error en item: " + entry);
+                System.out.println("[WorldManager] Error: " + e.getMessage());
+                e.printStackTrace();
             }
-        }
-    }
-
-    /**
-     * Intenta encontrar el método para soltar items en el mundo.
-     * Hytale puede llamarlo 'spawnItem', 'dropItem' o 'dropItemStack'.
-     */
-    private void dropItemStackSafely(World world, Vector3d pos, ItemStack stack) {
-        try {
-            // Intento 1: spawnItem(Vector3d, ItemStack)
-            try {
-                Method m = world.getClass().getMethod("spawnItem", Vector3d.class, ItemStack.class);
-                m.invoke(world, pos, stack);
-                return;
-            } catch (NoSuchMethodException e) { /* Sigue al siguiente */ }
-
-            // Intento 2: dropItem(Vector3d, ItemStack)
-            try {
-                Method m = world.getClass().getMethod("dropItem", Vector3d.class, ItemStack.class);
-                m.invoke(world, pos, stack);
-                return;
-            } catch (NoSuchMethodException e) { /* Sigue al siguiente */ }
-
-            // Intento 3: Si nada funciona, imprimimos qué métodos tiene el mundo para investigar
-            System.out.println("[WorldManager] No se encontró método de drop. Revisa la consola para ver métodos disponibles.");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        });
     }
 
     private int getHighestBlockY(World world, int x, int z) {
         for (int y = 150; y > 0; y--) {
-            // Tu arreglo: Convertimos el bloque a String para comparar
-            String blockId = String.valueOf(world.getBlock(x, y, z));
-
-            // Hytale a veces devuelve "hytale:air", "air" o "Block{hytale:air}"
-            if (blockId != null && !blockId.contains("air")) {
-                return y;
-            }
+            try {
+                Object block = world.getBlock(x, y, z);
+                if (block != null) {
+                    String name = block.toString().toLowerCase();
+                    if (!name.contains("air") && !name.contains("void") && !name.contains("null")) {
+                        return y;
+                    }
+                }
+            } catch (Exception e) {}
         }
-        return 70;
+        return 80;
     }
 }

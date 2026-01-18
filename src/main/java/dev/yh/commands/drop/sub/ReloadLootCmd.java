@@ -17,6 +17,11 @@ public class ReloadLootCmd extends AbstractCommand {
         this.lootManager = lootManager;
     }
 
+    @Override
+    protected boolean canGeneratePermission() {
+        return false; // Desactiva el candado automático. ¡Público para todos!
+    }
+
     @NullableDecl
     @Override
     protected CompletableFuture<Void> execute(CommandContext context) {

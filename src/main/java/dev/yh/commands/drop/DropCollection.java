@@ -26,4 +26,9 @@ public class DropCollection extends AbstractCommandCollection {
         this.addSubCommand(new ListLootCmd(loot));
         this.addSubCommand(new ReloadLootCmd(loot));
     }
+
+    @Override
+    protected boolean canGeneratePermission() {
+        return false; // Desactiva el candado automático. ¡Público para todos!
+    }
 }

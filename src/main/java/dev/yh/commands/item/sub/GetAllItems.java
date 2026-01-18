@@ -17,6 +17,11 @@ public class GetAllItems extends CommandBase {
     }
 
     @Override
+    protected boolean canGeneratePermission() {
+        return false; // Desactiva el candado automático. ¡Público para todos!
+    }
+
+    @Override
     protected void executeSync(@Nonnull CommandContext context) {
         context.sendMessage(Message.raw("Te voa imprimir items!"));
 

@@ -27,6 +27,11 @@ public class TestLootCmd extends AbstractCommand {
     }
 
     @Override
+    protected boolean canGeneratePermission() {
+        return false; // Desactiva el candado automático. ¡Público para todos!
+    }
+
+    @Override
     @Nonnull
     protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
         int zoneId = zoneArg.get(context);
