@@ -1,4 +1,4 @@
-package dev.yh.utlis;
+package dev.yh.utils;
 
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -7,9 +7,9 @@ import com.hypixel.hytale.server.core.modules.entity.component.TransformComponen
 public class PlayerUtils {
 
     /**
-     * Obtiene la posición actual de un jugador de forma segura.
+     * Extrae la posición (Vector3d) de un jugador usando el sistema de componentes.
      */
-    public static Vector3d getPlayerPosition(Player player) {
+    public static Vector3d getPos(Player player) {
         try {
             var entityRef = player.getReference();
             if (entityRef != null && entityRef.isValid()) {
@@ -24,7 +24,7 @@ public class PlayerUtils {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            // Loguear error opcionalmente
         }
         return null;
     }
