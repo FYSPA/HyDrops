@@ -1,0 +1,94 @@
+{
+  "zone_1": [
+    {
+      "id": "Wood_Birch_Trunk_Full",
+      "min": 5,
+      "max": 16,
+      "weight": 100
+    },
+    {
+      "id": "Weapon_Staff_Bo_Bamboo",
+      "min": 1,
+      "max": 1,
+      "weight": 30
+    },
+    {
+      "id": "Armor_Leather_Light_Legs",
+      "min": 1,
+      "max": 1,
+      "weight": 10
+    },
+    {
+      "id": "Furniture_Village_Bed",
+      "min": 1,
+      "max": 1,
+      "weight": 5
+    }
+  ],
+  "zone_2": [
+    {
+      "id": "Rock_Basalt",
+      "min": 10,
+      "max": 32,
+      "weight": 100
+    },
+    {
+      "id": "Armor_Leather_Medium_Chest",
+      "min": 1,
+      "max": 1,
+      "weight": 25
+    },
+    {
+      "id": "Plant_Fruit_Poison",
+      "min": 1,
+      "max": 3,
+      "weight": 50
+    }
+  ],
+  "zone_3": [
+    {
+      "id": "Ingredient_Bar_Gold",
+      "min": 1,
+      "max": 5,
+      "weight": 60
+    },
+    {
+      "id": "Weapon_Sword_Bone",
+      "min": 1,
+      "max": 1,
+      "weight": 20
+    },
+    {
+      "id": "Furniture_Village_Chest_Large",
+      "min": 1,
+      "max": 1,
+      "weight": 15
+    }
+  ],
+  "zone_4": [
+    {
+      "id": "Ingredient_Bar_Prisma",
+      "min": 1,
+      "max": 3,
+      "weight": 80
+    },
+    {
+      "id": "Weapon_Staff_Crystal_Ice",
+      "min": 1,
+      "max": 1,
+      "weight": 10
+    },
+    {
+      "id": "Weapon_Daggers_Adamantite",
+      "min": 1,
+      "max": 1,
+      "weight": 5
+    },
+    {
+      "id": "Alchemy_Cauldron_Big",
+      "min": 1,
+      "max": 1,
+      "weight": 2
+    }
+  ]
+}
