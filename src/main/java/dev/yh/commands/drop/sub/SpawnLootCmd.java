@@ -18,7 +18,7 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class SpawnDropCmd extends AbstractCommand {
+public class SpawnLootCmd extends AbstractCommand {
 
     private final LootManager lootManager;
     private final ZoneManager zoneManager;
@@ -27,14 +27,14 @@ public class SpawnDropCmd extends AbstractCommand {
     private final OptionalArg<Integer> zoneArg;
     private final OptionalArg<Integer> amountArg;
 
-    public SpawnDropCmd(LootManager loot, ZoneManager zone, WorldManager world) {
-        super("spawn", "Suelta items en tu posición actual según la zona");
+    public SpawnLootCmd(LootManager loot, ZoneManager zone, WorldManager world) {
+        super("loot", "Spawnea los ITEMS directamente (Lluvia de loot)");
         this.lootManager = loot;
         this.zoneManager = zone;
         this.worldManager = world;
 
-        this.zoneArg = withOptionalArg("zone", "ID de zona manual", ArgTypes.INTEGER);
-        this.amountArg = withOptionalArg("amount", "Cantidad de items", ArgTypes.INTEGER);
+        this.zoneArg = withOptionalArg("zone", "ID de zona", ArgTypes.INTEGER);
+        this.amountArg = withOptionalArg("amount", "Cantidad", ArgTypes.INTEGER);
     }
 
     @Override
@@ -45,39 +45,32 @@ public class SpawnDropCmd extends AbstractCommand {
     @Override
     @Nonnull
     protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
-        if (!(context.sender() instanceof Player)) {
-            context.sender().sendMessage(Message.raw("§cSolo jugadores!"));
-            return CompletableFuture.completedFuture(null);
-        }
+        if (!(context.sender() instanceof Player)) return CompletableFuture.completedFuture(null);
 
         Player player = (Player) context.sender();
-        final World world = player.getWorld();
+        World world = player.getWorld();
 
-        // Ejecutamos dentro del hilo del mundo para mayor seguridad
-        player.getWorld().execute(() -> {
+        world.execute(() -> {
             Vector3d pos = PlayerUtils.getPos(player);
+            if (pos == null) return;
 
-            if (pos == null) {
-                player.sendMessage(Message.raw("§cError al detectar tu posición física. Intentelo de nuevo."));
-                return;
-            }
-
-            // --- Toda la lógica del comando se mueve aquí adentro ---
-            int targetZone = zoneArg.provided(context) ? zoneArg.get(context) : zoneManager.getPlayerZoneId(player);
+            // 1. Calcular Zona y Cantidad
+            int zoneId = zoneArg.provided(context) ? zoneArg.get(context) : zoneManager.getPlayerZoneId(player);
             int amount = amountArg.provided(context) ? amountArg.get(context) : 3;
 
-            List<String> items = lootManager.generateLootForZone(targetZone, amount);
+            // 2. Generar Lista
+            List<String> items = lootManager.generateLootForZone(zoneId, amount);
 
             if (items.isEmpty()) {
-                player.sendMessage(Message.raw("§cNo hay loot para la zona " + targetZone));
+                player.sendMessage(Message.raw("§cError: No hay loot para la zona " + zoneId));
                 return;
             }
 
-            // Soltamos los items
+            // 3. LLAMADA AL MANAGER DE FÍSICAS (ITEMS)
+            // Usamos la sobrecarga que calcula la altura automáticamente
             worldManager.spawnPhysicalDrop(world, pos.x, pos.z, items, player);
-            player.sendMessage(Message.raw("Cordenadas:"  + pos.x + "   " + pos.y + "   " + pos.z));
 
-            player.sendMessage(Message.raw("§e[Drop Ark] §a¡Loot spawneado!"));
+            player.sendMessage(Message.raw("§b[HyDrops] §a¡Lluvia de items generada!"));
         });
 
         return CompletableFuture.completedFuture(null);
