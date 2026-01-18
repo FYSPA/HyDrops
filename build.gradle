@@ -1,0 +1,34 @@
+plugins {
+    id 'java'
+}
+
+group = 'dev.yh'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+    flatDir {
+        dirs 'libraries' // Aquí es donde busca tu HytaleServer.jar
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+// Esto evita errores de caracteres raros (acentos, ñ, etc)
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+dependencies {
+    // IMPORTANTE: Solo compilamos contra el server, no lo metemos dentro del mod
+    compileOnly name: 'HytaleServer'
+}
+
+jar {
+    // Nombre del archivo final que pondrás en la carpeta mods
+    archiveFileName = "HyDrops.jar"
+}
