@@ -17,6 +17,7 @@ import dev.yh.managers.DropRegistry;
 import dev.yh.model.FallingDropComponent;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.Method;
 
 public class DropFallingSystem extends EntityTickingSystem<EntityStore> {
     private final DropRegistry registry;
@@ -45,43 +46,84 @@ public class DropFallingSystem extends EntityTickingSystem<EntityStore> {
         Vector3d pos = transform.getPosition();
         World world = store.getExternalData().getWorld();
 
-        // LOG DE DEBUG (Para ver en la consola si el sistema está encontrando la entidad)
-        // System.out.println("Procesando caída de entidad en Y: " + pos.y);
+        // Aumentamos el contador de vida del drop
+        falling.ticksExisted++;
 
-        // 1. Lógica de caída
-        if (pos.y > falling.targetY + 0.1) {
+        // 1. OBTENER EL BLOQUE DE ABAJO
+        // Miramos 0.5 abajo para anticipar el choque antes de entrar al bloque
+        int ix = (int) Math.floor(pos.x);
+        int iy = (int) Math.floor(pos.y - 0.5);
+        int iz = (int) Math.floor(pos.z);
+
+        Object blockObj = world.getBlock(ix, iy, iz);
+
+        // 2. DETECCIÓN DE SUELO
+        boolean isFloor = isSolidFloor(blockObj);
+
+        // --- NUEVA REGLA DE SEGURIDAD POR TIEMPO ---
+        // Ignoramos el suelo solo durante los primeros 10 ticks (medio segundo)
+        // para evitar que se detenga en el mismo aire donde spawneó.
+        // Después de eso, detectará cualquier bloque sólido a cualquier altura.
+        if (falling.ticksExisted < 10) {
+            isFloor = false;
+        }
+
+        // 3. LÓGICA DE MOVIMIENTO
+        if (!isFloor && pos.y > 0) {
             double newY = pos.y - 0.5; // Velocidad de caída
 
-            // --- EL CAMBIO CLAVE ---
-            // Creamos un NUEVO TransformComponent con la nueva posición
-            // Conservamos la rotación y escala originales
             TransformComponent updatedTransform = new TransformComponent(
-                    new Vector3d(pos.x, newY, pos.z), // Posición
-                    transform.getRotation()           // Rotación
+                    new Vector3d(pos.x, newY, pos.z),
+                    transform.getRotation()
             );
 
-            // Usamos el commandBuffer para "empujar" el cambio al motor del juego
             commandBuffer.putComponent(archetypeChunk.getReferenceTo(i), TransformComponent.getComponentType(), updatedTransform);
-
+            commandBuffer.putComponent(archetypeChunk.getReferenceTo(i), FallingDropComponent.getComponentType(), falling);
         }
-        // 2. ATERRIZAJE
         else {
-            try {
-                int ix = (int)Math.floor(pos.x);
-                int iy = (int)falling.targetY;
-                int iz = (int)Math.floor(pos.z);
+            // 4. ATERRIZAJE
+            // Debug: Nos dice qué bloque lo detuvo
+            String finalBlock = (blockObj != null) ? blockObj.toString() : "NULL";
 
-                world.setBlock(ix, iy, iz, "Furniture_Tavern_Chest_Small");
-                registry.registerDrop(ix, iy, iz);
+            // Ponemos el cofre un bloque por encima del suelo detectado (iy + 1)
+            landing(world, ix, iy + 1, iz, archetypeChunk.getReferenceTo(i), commandBuffer, finalBlock);
+        }
+    }
 
-                commandBuffer.removeEntity(archetypeChunk.getReferenceTo(i), RemoveReason.REMOVE);
+    private boolean isSolidFloor(Object block) {
+        if (block == null) return false;
 
-                Universe.get().getPlayers().forEach(p ->
-                        p.sendMessage(Message.raw("§6§l[HyDrops] §a¡Suministro aterrizado en X:" + ix + " Z:" + iz + "!"))
-                );
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        // Intentamos detectar por metodos nativos
+        try {
+            Method isAir = block.getClass().getMethod("isAir");
+            if ((boolean) isAir.invoke(block)) return false;
+        } catch (Exception ignored) {}
+
+        String name = block.toString().toLowerCase();
+
+        // Lista de cosas que NO detendrán el drop (lo atraviesa)
+        boolean isNotSolid = name.contains("air") ||
+                name.contains("void") ||
+                name.contains("cloud") ||
+                name.contains("null") ||
+                name.contains("env") ||
+                name.contains("atmosphere") ||
+                name.equals("0"); // Por el error que vimos en tu imagen
+
+        return !isNotSolid;
+    }
+
+    private void landing(World world, int x, int y, int z, com.hypixel.hytale.component.Ref<EntityStore> ref, CommandBuffer<EntityStore> cb, String blockName) {
+        try {
+            world.setBlock(x, y, z, "Furniture_Tavern_Chest_Small");
+            registry.registerDrop(x, y, z);
+            cb.removeEntity(ref, RemoveReason.REMOVE);
+
+            Universe.get().getPlayers().forEach(p ->
+                    p.sendMessage(Message.raw("§6§l[HyDrops] §a¡Suministro aterrizado sobre §f" + blockName + "§a!"))
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

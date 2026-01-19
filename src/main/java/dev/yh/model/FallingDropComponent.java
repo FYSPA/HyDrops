@@ -3,12 +3,14 @@ package dev.yh.model;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.codec.builder.BuilderCodec; // Asegura este import
+import com.hypixel.hytale.codec.builder.BuilderCodec;
 
 public class FallingDropComponent implements Component<EntityStore> {
     public double targetY;
 
-    // EL CODEC DEBE IR AQUÍ (Dentro de la clase del componente)
+    // --- ESTA ES LA VARIABLE QUE FALTABA ---
+    public int ticksExisted = 0;
+
     public static final BuilderCodec<FallingDropComponent> CODEC =
             BuilderCodec.builder(FallingDropComponent.class, () -> new FallingDropComponent(0)).build();
 
@@ -16,11 +18,14 @@ public class FallingDropComponent implements Component<EntityStore> {
 
     public FallingDropComponent(double targetY) {
         this.targetY = targetY;
+        this.ticksExisted = 0; // Empieza en cero
     }
 
     @Override
     public Component<EntityStore> clone() {
-        return new FallingDropComponent(targetY);
+        FallingDropComponent clone = new FallingDropComponent(targetY);
+        clone.ticksExisted = this.ticksExisted; // Copiamos el valor al clonar
+        return clone;
     }
 
     public static ComponentType<EntityStore, FallingDropComponent> getComponentType() {
