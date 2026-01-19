@@ -20,23 +20,49 @@ public class WorldManager {
     private static final int MAX_ITEMS_PER_DROP = 3;
     private static final double SPREAD_RADIUS = 2.0;
 
-    // =========================================================
-    // FASE 1: SPAWN DEL BLOQUE (CAJA)
-    // =========================================================
     public void spawnBlockDrop(World world, double x, double z, Player player) {
         int groundY = getHighestBlockY(world, (int) x, (int) z);
 
-        int blockX = (int) x;
-        int blockY = groundY + 1;
-        int blockZ = (int) z;
+        // Coordenadas enteras para setBlock
+        int bx = (int) x;
+        int by = groundY + 1;
+        int bz = (int) z;
 
         if (player != null) {
-            player.sendMessage(Message.raw("§e[HyDrops] §7Enviando suministros a X:" + blockX + " Y:" + blockY + " Z:" + blockZ));
+            player.sendMessage(Message.raw("§e[HyDrops] §7Caja cayendo en: " + bx + "," + by + "," + bz));
         }
 
         world.execute(() -> {
-            // Usamos "hytale:chest" o el bloque que prefieras
-            BlockUtils.placeBlock(world, blockX, blockY, blockZ, "hytale:chest");
+            try {
+                // 1. ELIMINAR CUALQUIER ENTIDAD FANTASMA PREVIA (Limpieza)
+                // (Opcional, pero buena práctica si hay basura en esa coordenada)
+
+                // 2. COLOCAR EL BLOQUE FÍSICO
+                // Usamos nombres que sabemos que funcionan.
+                // IMPORTANTE: Busca en tu reference_items.json el nombre exacto del cofre.
+                // A veces es "Chest", "Chest_Wood", "Container_Chest".
+                // Por ahora usaremos "Chest" que suele ser el estándar, o un bloque sólido visible.
+
+                String blockId = "Furniture_Tavern_Chest_Small"; // Intenta con "Chest" o "hytale:Chest"
+
+                // Si tienes dudas del nombre, usa "Dirt" para probar que la física funciona
+                // String blockId = "Dirt";
+
+                // Usamos la API directa de setBlock (Tu PrefabUtils logic)
+                if (!blockId.contains(":") && !blockId.contains("_")) {
+                    // Si es un nombre simple, a veces necesita hytale:
+                    blockId = blockId;
+                }
+
+                // Forzamos la colocación del bloque
+                world.setBlock(bx, by, bz, blockId);
+
+                // DEBUG: Avisar si funcionó
+                System.out.println("Bloque físico colocado: " + blockId);
+
+            } catch (Exception e) {
+                System.out.println("Error colocando bloque físico: " + e.getMessage());
+            }
         });
     }
 

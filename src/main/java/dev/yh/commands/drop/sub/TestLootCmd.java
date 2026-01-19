@@ -18,7 +18,7 @@ public class TestLootCmd extends AbstractCommand {
     private final RequiredArg<Integer> rollsArg;
 
     public TestLootCmd(LootManager lootManager) {
-        super("test", "Prueba la aleatorización de una zona");
+        super("rng", "Prueba la aleatorización de una zona");
         this.lootManager = lootManager;
 
         // Aquí los hacemos obligatorios para el test: /drop test <zona> <tiros>

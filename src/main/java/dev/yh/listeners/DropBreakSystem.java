@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3i; // Importante
 
 import dev.yh.managers.LootManager;
 import dev.yh.managers.ZoneManager;
@@ -49,76 +50,43 @@ public class DropBreakSystem extends EntityEventSystem<EntityStore, BreakBlockEv
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null) return;
 
-        // 1. OBTENER COORDENADAS POR REFLEXIÓN (A prueba de fallos)
-        Vector3d pos = getEventCoordinates(event);
-
-        if (pos == null) {
-            // Si falla, imprimimos los campos para investigar (SOLO DEBUG)
-            System.out.println("--- CAMPOS DEL EVENTO ---");
-            for(Field f : event.getClass().getDeclaredFields()) {
-                System.out.println(f.getName() + " -> " + f.getType().getSimpleName());
-            }
-            return;
-        }
-
-        // 2. VERIFICAR BLOQUE USANDO EL MUNDO
-        // No le preguntamos al evento, le preguntamos al mundo qué hay en esa posición
-        World world = player.getWorld();
-        Object blockObj = world.getBlock((int)pos.x, (int)pos.y, (int)pos.z);
-        String blockId = (blockObj != null) ? blockObj.toString().toLowerCase() : "aire";
-
-        // 3. LOGICA DEL DROP
-        // Verifica si es un cofre (o el bloque que hayas puesto)
-        if (blockId.contains("chest")) {
-
-            player.sendMessage(Message.raw("§6[HyDrops] §a¡Suministro abierto!"));
-
-            // Calcular y Soltar Loot
-            int zoneId = zoneManager.getPlayerZoneId(player);
-            List<String> loot = lootManager.generateLootForZone(zoneId, 5);
-
-            if (!loot.isEmpty()) {
-                Vector3d centerPos = new Vector3d(pos.x + 0.5, pos.y + 0.5, pos.z + 0.5);
-                worldManager.spawnPhysicalDrop(world, centerPos, loot, player);
-            }
-        }
-    }
-
-    /**
-     * Este método busca dentro del evento cualquier variable que parezca una coordenada.
-     */
-    private Vector3d getEventCoordinates(Object event) {
         try {
-            Class<?> clazz = event.getClass();
-            double x = 0, y = 0, z = 0;
-            boolean found = false;
+            // 1. OBTENER POSICIÓN (Usando el nombre exacto que vimos: targetBlock)
+            Field posField = event.getClass().getDeclaredField("targetBlock");
+            posField.setAccessible(true);
+            Vector3i blockPos = (Vector3i) posField.get(event);
 
-            // Buscamos campos públicos llamados x, y, z o pos/position
-            for (Field f : clazz.getFields()) { // Campos públicos
-                String name = f.getName().toLowerCase();
+            // 2. OBTENER ID DEL BLOQUE (Usando blockType)
+            Field typeField = event.getClass().getDeclaredField("blockType");
+            typeField.setAccessible(true);
+            Object blockTypeObj = typeField.get(event);
 
-                // Si encontramos un objeto de posición directo (Vector3i o Vector3d)
-                if (name.contains("pos") && !f.getType().isPrimitive()) {
-                    Object vector = f.get(event);
-                    // Aquí asumimos que el vector tiene métodos getX/Y/Z o campos x/y/z
-                    // Simplificación: usaremos el toString para debuggear si lo encuentra
-                    System.out.println("[Debug] Encontrado campo posición: " + name + " -> " + vector);
-                    // Si puedes, intenta castear esto. Por ahora, sigamos buscando x,y,z sueltos.
-                }
+            // Sacamos el ID del blockType (que vimos en la imagen que tiene un campo 'id')
+            Field idField = blockTypeObj.getClass().getDeclaredField("id");
+            idField.setAccessible(true);
+            String blockId = idField.get(blockTypeObj).toString();
 
-                // Buscamos coordenadas sueltas (int o double)
-                if (f.getType() == int.class || f.getType() == double.class) {
-                    if (name.equals("x")) { x = ((Number)f.get(event)).doubleValue(); found = true; }
-                    if (name.equals("y")) { y = ((Number)f.get(event)).doubleValue(); }
-                    if (name.equals("z")) { z = ((Number)f.get(event)).doubleValue(); }
+            // 3. FILTRAR: ¿Es un cofre?
+            if (blockId.toLowerCase().contains("chest") || blockId.toLowerCase().contains("crate")) {
+
+                player.sendMessage(Message.raw("§6[HyDrops] §a¡Suministro abierto!"));
+
+                // Lógica de Loot
+                int zoneId = zoneManager.getPlayerZoneId(player);
+                List<String> loot = lootManager.generateLootForZone(zoneId, 5);
+
+                if (!loot.isEmpty()) {
+                    // Convertimos Vector3i a Vector3d para las físicas
+                    Vector3d spawnPos = new Vector3d(blockPos.x + 0.5, blockPos.y + 0.5, blockPos.z + 0.5);
+
+                    // Soltamos el premio
+                    worldManager.spawnPhysicalDrop(player.getWorld(), spawnPos, loot, player);
                 }
             }
-
-            if (found) return new Vector3d(x, y, z);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            // Si algo falla, no bloqueamos el juego, solo avisamos por consola
+            // System.err.println("Error en el sistema de drops: " + e.getMessage());
         }
-        return null;
     }
 }

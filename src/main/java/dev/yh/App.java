@@ -7,6 +7,7 @@ import javax.annotation.Nonnull;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
+import dev.yh.listeners.DropBreakSystem;
 import dev.yh.managers.*;
 import dev.yh.core.ModRegistry;
 import dev.yh.model.LootEntry;
@@ -36,6 +37,10 @@ public class App extends JavaPlugin {
 
         this.modRegistry = new ModRegistry(lootManager, zoneManager, itemManager, worldManager);
         modRegistry.registerAllCommands(this.getCommandRegistry());
+
+        DropBreakSystem dropSystem = new DropBreakSystem(lootManager, zoneManager, worldManager);
+        this.getEntityStoreRegistry().registerSystem(dropSystem);
+
     }
 
     @Override
