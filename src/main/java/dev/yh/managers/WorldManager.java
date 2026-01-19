@@ -1,12 +1,17 @@
 package dev.yh.managers;
 
+import com.hypixel.hytale.component.AddReason;
+import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.entity.entities.BlockEntity;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.modules.time.TimeResource;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import dev.yh.model.FallingDropComponent;
 import dev.yh.utils.ItemUtils;
 import dev.yh.utils.BlockUtils;
 
@@ -21,58 +26,34 @@ public class WorldManager {
     private static final double SPREAD_RADIUS = 2.0;
 
     public void spawnBlockDrop(World world, double x, double z, Player player) {
+        // 1. Buscamos el suelo REAL (empezando desde 120 hacia abajo para evitar nubes/techo)
         int groundY = getHighestBlockY(world, (int) x, (int) z);
 
-        // Coordenadas enteras para setBlock
-        int bx = (int) x;
-        int by = groundY + 1;
-        int bz = (int) z;
-
-        if (player != null) {
-            player.sendMessage(Message.raw("§e[HyDrops] §7Caja cayendo en: " + bx + "," + by + "," + bz));
-        }
+        // 2. Altura de SPAWN (Cielo)
+        Vector3d skyPos = new Vector3d(x + 0.5, 150.0, z + 0.5);
 
         world.execute(() -> {
             try {
-                // 1. ELIMINAR CUALQUIER ENTIDAD FANTASMA PREVIA (Limpieza)
-                // (Opcional, pero buena práctica si hay basura en esa coordenada)
+                var store = world.getEntityStore().getStore();
+                var time = (com.hypixel.hytale.server.core.modules.time.TimeResource)
+                        store.getResource(TimeResource.getResourceType());
 
-                // 2. COLOCAR EL BLOQUE FÍSICO
-                // Usamos nombres que sabemos que funcionan.
-                // IMPORTANTE: Busca en tu reference_items.json el nombre exacto del cofre.
-                // A veces es "Chest", "Chest_Wood", "Container_Chest".
-                // Por ahora usaremos "Chest" que suele ser el estándar, o un bloque sólido visible.
+                var holder = BlockEntity.assembleDefaultBlockEntity(time, "Furniture_Tavern_Chest_Small", skyPos);
 
-                String blockId = "Furniture_Tavern_Chest_Small"; // Intenta con "Chest" o "hytale:Chest"
+                var type = FallingDropComponent.getComponentType();
+                if (type != null) {
+                    // Seteamos el targetY REAL (el suelo que encontramos)
+                    holder.addComponent(type, new FallingDropComponent((double) groundY));
 
-                // Si tienes dudas del nombre, usa "Dirt" para probar que la física funciona
-                // String blockId = "Dirt";
-
-                // Usamos la API directa de setBlock (Tu PrefabUtils logic)
-                if (!blockId.contains(":") && !blockId.contains("_")) {
-                    // Si es un nombre simple, a veces necesita hytale:
-                    blockId = blockId;
+                    if (player != null) {
+                        player.sendMessage(Message.raw("§6[HyDrops] §eSuministro creado a Y:150. Debe bajar hasta Y:" + groundY));
+                    }
                 }
-
-                // Forzamos la colocación del bloque
-                world.setBlock(bx, by, bz, blockId);
-
-                // DEBUG: Avisar si funcionó
-                System.out.println("Bloque físico colocado: " + blockId);
-
-            } catch (Exception e) {
-                System.out.println("Error colocando bloque físico: " + e.getMessage());
-            }
+                store.addEntity(holder, AddReason.SPAWN);
+            } catch (Exception e) { e.printStackTrace(); }
         });
     }
 
-    // =========================================================
-    // FASE 2: SPAWN DE ITEMS (LOOT)
-    // =========================================================
-
-    /**
-     * Versión 1: Para comandos de admin (Calcula la altura automáticamente).
-     */
     public void spawnPhysicalDrop(World world, double x, double z, List<String> itemStrings, Player playerContext) {
         int groundY = getHighestBlockY(world, (int) x, (int) z);
         // Creamos la posición y llamamos a la Versión 2
@@ -80,10 +61,6 @@ public class WorldManager {
         spawnPhysicalDrop(world, spawnPos, itemStrings, playerContext);
     }
 
-    /**
-     * Versión 2: Para el Listener (Usa una posición exacta).
-     * AQUÍ ESTÁ LA LÓGICA DE DIVISIÓN DE STACKS.
-     */
     public void spawnPhysicalDrop(World world, Vector3d spawnPos, List<String> itemStrings, Player playerContext) {
         world.execute(() -> {
             try {
@@ -110,27 +87,24 @@ public class WorldManager {
                     }
                 }
             } catch (Exception e) {
-                System.out.println("[WorldManager] Error: " + e.getMessage());
+                playerContext.sendMessage(Message.raw("[WorldManager] Error: " + e.getMessage()));
                 e.printStackTrace();
             }
         });
     }
 
-    // =========================================================
-    // UTILIDADES
-    // =========================================================
     private int getHighestBlockY(World world, int x, int z) {
-        for (int y = 150; y > 0; y--) {
-            try {
-                Object block = world.getBlock(x, y, z);
-                if (block != null) {
-                    String name = block.toString().toLowerCase();
-                    if (!name.contains("air") && !name.contains("void") && !name.contains("null")) {
-                        return y;
-                    }
+        // Escaneamos desde 120 hacia abajo para no detectar cosas en el cielo
+        for (int y = 120; y > 0; y--) {
+            Object block = world.getBlock(x, y, z);
+            if (block != null) {
+                String name = block.toString().toLowerCase();
+                // SOLO aceptamos bloques que NO sean aire, nulos o nubes
+                if (!name.contains("air") && !name.contains("null") && !name.contains("cloud") && !name.contains("void")) {
+                    return y;
                 }
-            } catch (Exception e) {}
+            }
         }
-        return 80;
+        return 60; // Altura por defecto si es un mundo vacío
     }
 }
