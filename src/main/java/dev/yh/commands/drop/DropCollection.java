@@ -4,7 +4,7 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractComman
 import dev.yh.commands.drop.sub.*;
 import dev.yh.managers.LootManager;
 import dev.yh.managers.ZoneManager;
-import dev.yh.managers.WorldManager;
+import dev.yh.managers.DropManager;
 
 public class DropCollection extends AbstractCommandCollection {
 
@@ -12,17 +12,17 @@ public class DropCollection extends AbstractCommandCollection {
     public DropCollection(
             LootManager loot,
             ZoneManager zone,
-            WorldManager worldM
+            DropManager dropM
 
             ) {
         super("drop", "Comandos del sistema de Ark Drops");
 
         // Creamos el subcomando pasándole todo lo que necesita
-        this.addSubCommand(new SpawnLootCmd(loot, zone, worldM));
+        this.addSubCommand(new SpawnLootCmd(loot, zone, dropM));
         this.addSubCommand(new TestLootCmd(loot));
         this.addSubCommand(new ListLootCmd(loot));
         this.addSubCommand(new ReloadLootCmd(loot));
-        this.addSubCommand(new SpawnBlockCmd(worldM));
+        this.addSubCommand(new SpawnBlockCmd(dropM));
     }
 
     @Override

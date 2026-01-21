@@ -17,7 +17,7 @@ import com.hypixel.hytale.math.vector.Vector3i; // Importante
 import dev.yh.managers.DropRegistry;
 import dev.yh.managers.LootManager;
 import dev.yh.managers.ZoneManager;
-import dev.yh.managers.WorldManager;
+import dev.yh.managers.DropManager;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
@@ -27,14 +27,14 @@ public class DropBreakSystem extends EntityEventSystem<EntityStore, BreakBlockEv
 
     private final LootManager lootManager;
     private final ZoneManager zoneManager;
-    private final WorldManager worldManager;
+    private final DropManager dropManager;
     private final DropRegistry dropRegistry;
 
-    public DropBreakSystem(LootManager loot, ZoneManager zone, WorldManager world, DropRegistry registry) {
+    public DropBreakSystem(LootManager loot, ZoneManager zone, DropManager world, DropRegistry registry) {
         super(BreakBlockEvent.class);
         this.lootManager = loot;
         this.zoneManager = zone;
-        this.worldManager = world;
+        this.dropManager = world;
         this.dropRegistry = registry;
     }
 
@@ -54,16 +54,17 @@ public class DropBreakSystem extends EntityEventSystem<EntityStore, BreakBlockEv
         if (player == null) return;
 
         try {
-            // 1. OBTENER POSICIÓN (Usando el nombre exacto que vimos: targetBlock)
+            // 1. OBTENER POSICIÓN
             Field posField = event.getClass().getDeclaredField("targetBlock");
             posField.setAccessible(true);
             Vector3i blockPos = (Vector3i) posField.get(event);
 
+            // 2. FILTRO DE SEGURIDAD
             if (!dropRegistry.isModDrop(blockPos.x, blockPos.y, blockPos.z)) {
-                // Si no está registrado, es un cofre normal. Salimos en silencio.
                 return;
             }
 
+            // 3. OBTENER ID DEL BLOQUE
             Field typeField = event.getClass().getDeclaredField("blockType");
             typeField.setAccessible(true);
             Object blockTypeObj = typeField.get(event);
@@ -79,10 +80,16 @@ public class DropBreakSystem extends EntityEventSystem<EntityStore, BreakBlockEv
                 List<String> loot = lootManager.generateLootForZone(zoneId, 5);
 
                 if (!loot.isEmpty()) {
-                    Vector3d spawnPos = new Vector3d(blockPos.x + 0.5, blockPos.y + 0.5, blockPos.z + 0.5);
-                    worldManager.spawnPhysicalDrop(player.getWorld(), spawnPos, loot, player);
+                    // --- AQUÍ ESTÁ LA CORRECCIÓN ---
+                    // Obtenemos el mundo desde el jugador
+                    World world = player.getWorld();
 
-                    // 4. LIMPIEZA: Lo borramos del registro porque ya se abrió
+                    Vector3d spawnPos = new Vector3d(blockPos.x + 0.5, blockPos.y + 0.5, blockPos.z + 0.5);
+
+                    // Ahora 'world' ya existe y el compilador estará feliz
+                    dropManager.spawnLootBurst(world, spawnPos, loot, player);
+
+                    // 4. LIMPIEZA
                     dropRegistry.unregisterDrop(blockPos.x, blockPos.y, blockPos.z);
                 }
             }

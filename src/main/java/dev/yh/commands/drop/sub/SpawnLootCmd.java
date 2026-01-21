@@ -11,7 +11,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 
 import dev.yh.managers.LootManager;
 import dev.yh.managers.ZoneManager;
-import dev.yh.managers.WorldManager;
+import dev.yh.managers.DropManager;
 import dev.yh.utils.PlayerUtils;
 
 import javax.annotation.Nonnull;
@@ -22,16 +22,16 @@ public class SpawnLootCmd extends AbstractCommand {
 
     private final LootManager lootManager;
     private final ZoneManager zoneManager;
-    private final WorldManager worldManager;
+    private final DropManager dropManager;
 
     private final OptionalArg<Integer> zoneArg;
     private final OptionalArg<Integer> amountArg;
 
-    public SpawnLootCmd(LootManager loot, ZoneManager zone, WorldManager world) {
+    public SpawnLootCmd(LootManager loot, ZoneManager zone, DropManager world) {
         super("loot", "Spawnea los ITEMS directamente (Lluvia de loot)");
         this.lootManager = loot;
         this.zoneManager = zone;
-        this.worldManager = world;
+        this.dropManager = world;
 
         this.zoneArg = withOptionalArg("zone", "ID de zona", ArgTypes.INTEGER);
         this.amountArg = withOptionalArg("amount", "Cantidad", ArgTypes.INTEGER);
@@ -66,9 +66,8 @@ public class SpawnLootCmd extends AbstractCommand {
                 return;
             }
 
-            // 3. LLAMADA AL MANAGER DE FÍSICAS (ITEMS)
-            // Usamos la sobrecarga que calcula la altura automáticamente
-            worldManager.spawnPhysicalDrop(world, pos.x, pos.z, items, player);
+            // 3. CORRECCIÓN: Usar el nuevo nombre y pasar el Vector3d pos
+            dropManager.spawnLootBurst(world, pos, items, player);
 
             player.sendMessage(Message.raw("§b[HyDrops] §a¡Lluvia de items generada!"));
         });

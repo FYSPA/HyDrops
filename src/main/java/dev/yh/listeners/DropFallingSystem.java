@@ -120,8 +120,9 @@ public class DropFallingSystem extends EntityTickingSystem<EntityStore> {
             cb.removeEntity(ref, RemoveReason.REMOVE);
 
             Universe.get().getPlayers().forEach(p ->
-                    p.sendMessage(Message.raw("§6§l[HyDrops] §a¡Suministro aterrizado sobre §f" + blockName + "§a!"))
+                    p.sendMessage(Message.raw("§6§l[HyDrops] §a¡Suministro aterrizado sobre §f" + blockName + "§a!" + "  " + x + "  " + y + "  " + z))
             );
+
         } catch (Exception e) {
             e.printStackTrace();
         }

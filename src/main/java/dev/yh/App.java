@@ -9,6 +9,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
 import dev.yh.listeners.DropBreakSystem;
 import dev.yh.listeners.DropFallingSystem;
+import dev.yh.listeners.DropTimerSystem;
 import dev.yh.managers.*;
 import dev.yh.core.ModRegistry;
 import dev.yh.model.FallingDropComponent;
@@ -20,7 +21,7 @@ public class App extends JavaPlugin {
     private ZoneManager zoneManager;
     private LootManager lootManager;
     private ModRegistry modRegistry;
-    private WorldManager worldManager;
+    private DropManager dropManager;
     private DropRegistry dropRegistry;
 
     public App(@Nonnull JavaPluginInit init) {
@@ -29,46 +30,44 @@ public class App extends JavaPlugin {
 
     @Override
     protected void setup() {
-        getLogger().at(Level.INFO).log("Starting SETUP phase for %s...", getManifest().getName());
+        getLogger().at(Level.INFO).log("Iniciando HyDrops Setup...");
 
-        // 1. Inicializar Managers
+        // 1. INICIALIZAR MANAGERS (Los cerebros)
         LootConfigLoader loader = new LootConfigLoader();
         Map<String, List<LootEntry>> data = loader.load();
+
         this.lootManager = new LootManager(data);
         this.zoneManager = new ZoneManager();
         this.itemManager = new ItemManager();
-        this.worldManager = new WorldManager();
-        this.dropRegistry = new DropRegistry(); // <--- Registro de seguridad
+        this.dropManager = new DropManager();
+        this.dropRegistry = new DropRegistry();
 
-        // 2. Comandos
-        this.modRegistry = new ModRegistry(lootManager, zoneManager, itemManager, worldManager);
-        modRegistry.registerAllCommands(this.getCommandRegistry());
-
-        // 3. Registro de Componentes ECS
-        // Registramos esto ANTES que los sistemas para que no sea null
-        // En tu setup() de App.java
+        // 2. REGISTRAR COMPONENTE ECS (La etiqueta)
         var type = getEntityStoreRegistry().registerComponent(
                 FallingDropComponent.class,
                 "HyDrop:Falling",
                 FallingDropComponent.CODEC
         );
-
-        if (type == null) {
-            getLogger().at(java.util.logging.Level.SEVERE).log("No se pudo registrar el componente");
-        } else {
+        if (type != null) {
             FallingDropComponent.setComponentType(type);
-            getLogger().at(java.util.logging.Level.INFO).log("Componente registrado con ID: " + type.getIndex());
         }
 
-        // 4. Registro de Sistemas ECS
-        // El sistema que hace que caigan los bloques
+        // 3. REGISTRAR SISTEMAS ECS (Los motores)
+        // El reloj nativo que decide cuándo cae un drop
+        this.getEntityStoreRegistry().registerSystem(new DropTimerSystem(dropManager));
+
+        // El sistema físico que baja los bloques
         this.getEntityStoreRegistry().registerSystem(new DropFallingSystem(dropRegistry));
 
-        // El sistema que detecta cuando se rompe un bloque
-        DropBreakSystem breakSystem = new DropBreakSystem(lootManager, zoneManager, worldManager, dropRegistry);
-        this.getEntityStoreRegistry().registerSystem(breakSystem);
+        // El sistema que detecta cuando se rompe un cofre del mod
+        this.getEntityStoreRegistry().registerSystem(new DropBreakSystem(lootManager, zoneManager, dropManager, dropRegistry));
+
+        // 4. REGISTRAR COMANDOS
+        this.modRegistry = new ModRegistry(lootManager, zoneManager, itemManager, dropManager);
+        this.modRegistry.registerAllCommands(this.getCommandRegistry());
 
     }
+
 
     @Override
     protected void start(){
