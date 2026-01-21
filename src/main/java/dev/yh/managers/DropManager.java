@@ -13,6 +13,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.yh.model.FallingDropComponent;
 import dev.yh.utils.ItemUtils;
+import dev.yh.utils.PlayerUtils;
 import dev.yh.utils.WorldUtils;
 
 import java.util.List;
@@ -41,7 +42,7 @@ public class DropManager {
                 if (type != null) {
                     holder.addComponent(type, new FallingDropComponent(0.0)); // 0.0 porque ahora detecta suelo solo
                     if (player != null) {
-                        player.sendMessage(Message.raw("§6[HyDrops] §e¡Suministro detectado en el cielo!"));
+                        PlayerUtils.broadcast( "[HyDrops] ¡Suministro detectado en el cielo!", "#0FF52E");
                     }
                 }
                 store.addEntity(holder, AddReason.SPAWN);
@@ -75,7 +76,7 @@ public class DropManager {
                     }
                 }
             } catch (Exception e) {
-                if (playerContext != null) playerContext.sendMessage(Message.raw("§c[DropManager] Error: " + e.getMessage()));
+                if (playerContext != null) PlayerUtils.broadcast("[DropManager] Error: " + e.getMessage(), "#F50F0F");
             }
         });
     }

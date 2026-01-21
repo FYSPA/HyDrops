@@ -22,7 +22,7 @@ public class SpawnBlockCmd extends AbstractCommand {
     private final OptionalArg<Double> zArg;
 
     public SpawnBlockCmd(DropManager world) {
-        super("block", "Spawnea la CAJA del drop (el bloque físico)");
+        super("block", "Spawnea la CAJA del drop instantáneamente");
         this.dropManager = world;
         this.xArg = withOptionalArg("x", "Coordenada X", ArgTypes.DOUBLE);
         this.zArg = withOptionalArg("z", "Coordenada Z", ArgTypes.DOUBLE);
@@ -30,7 +30,7 @@ public class SpawnBlockCmd extends AbstractCommand {
 
     @Override
     protected boolean canGeneratePermission() {
-        return false; // Desactiva el candado automático. ¡Público para todos!
+        return false;
     }
 
     @Override
@@ -48,10 +48,10 @@ public class SpawnBlockCmd extends AbstractCommand {
             double tx = xArg.provided(context) ? xArg.get(context) : pos.x;
             double tz = zArg.provided(context) ? zArg.get(context) : pos.z;
 
-            // CORRECCIÓN: Usar el nuevo nombre del método
+            // LLAMADA INSTANTÁNEA AL DROP
             dropManager.spawnFallingCrate(world, tx, tz, player);
 
-            player.sendMessage(Message.raw("§e[HyDrops] §a¡Caja enviada desde el cielo!"));
+            PlayerUtils.broadcast("[HyDrops] ¡Caja enviada desde el cielo!", "#0FF516");
         });
 
         return CompletableFuture.completedFuture(null);

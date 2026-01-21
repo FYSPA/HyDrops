@@ -69,29 +69,29 @@ public class PlayerUtils {
         return null;
     }
 
-    public static void broadcast(String text) {
-        // Obtenemos el Universo
+    public static void broadcast(String text, String hexColor) {
         Universe universe = Universe.get();
-
-        // Buscamos el mundo principal (usualmente llamado "world" u "orbis")
-        // Si no tienes el nombre, podemos usar el mundo de la primera referencia que encontremos
         var worlds = universe.getWorlds();
         if (worlds.isEmpty()) return;
 
         World mainWorld = worlds.values().iterator().next();
 
-        // FORZAMOS la ejecución dentro del hilo del mundo
         mainWorld.execute(() -> {
-            Message message = Message.raw(text);
+            String formattedColor = hexColor.startsWith("#") ? hexColor : "#" + hexColor;
+            Message message = Message.raw(text).color(formattedColor);
 
-            // Ahora que estamos "dentro" del mundo, el Store está desbloqueado
             for (PlayerRef ref : universe.getPlayers()) {
-                Player p = getPlayerFromRef(ref); // Ahora esto NO dará null
+                Player p = getPlayerFromRef(ref);
                 if (p != null) {
                     p.sendMessage(message);
                 }
             }
         });
+    }
+
+    // Versión sobrecargada (sin color) por si quieres enviar mensajes blancos normales
+    public static void broadcast(String text) {
+        broadcast(text, "FFFFFF"); // Blanco por defecto
     }
 
     public static void sendMessageTo(String playerName, String text) {

@@ -23,6 +23,7 @@ public class DropCollection extends AbstractCommandCollection {
         this.addSubCommand(new ListLootCmd(loot));
         this.addSubCommand(new ReloadLootCmd(loot));
         this.addSubCommand(new SpawnBlockCmd(dropM));
+        this.addSubCommand(new GetZoneCmd(zone));
     }
 
     @Override

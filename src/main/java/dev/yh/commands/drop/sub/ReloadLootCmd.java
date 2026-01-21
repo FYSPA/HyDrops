@@ -19,17 +19,16 @@ public class ReloadLootCmd extends AbstractCommand {
 
     @Override
     protected boolean canGeneratePermission() {
-        return false; // Desactiva el candado automático. ¡Público para todos!
+        return false;
     }
 
     @NullableDecl
     @Override
     protected CompletableFuture<Void> execute(CommandContext context) {
-        // Volvemos a usar el loader para leer el disco
         LootConfigLoader loader = new LootConfigLoader();
         lootManager.reloadData(loader.load());
 
-        context.sender().sendMessage(Message.raw("§a[HyDrops] ¡Configuración recargada con éxito!"));
+        context.sender().sendMessage(Message.raw("[HyDrops] ¡Configuración recargada con éxito!").color("17F50F"));
         return CompletableFuture.completedFuture(null);
     }
 

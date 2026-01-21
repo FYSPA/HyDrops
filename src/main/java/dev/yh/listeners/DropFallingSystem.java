@@ -1,10 +1,7 @@
 package dev.yh.listeners;
 
-import com.hypixel.hytale.component.ArchetypeChunk;
-import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
-import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.Message;
@@ -46,24 +43,14 @@ public class DropFallingSystem extends EntityTickingSystem<EntityStore> {
         Vector3d pos = transform.getPosition();
         World world = store.getExternalData().getWorld();
 
-        // Aumentamos el contador de vida del drop
         falling.ticksExisted++;
 
-        // 1. OBTENER EL BLOQUE DE ABAJO
-        // Miramos 0.5 abajo para anticipar el choque antes de entrar al bloque
         int ix = (int) Math.floor(pos.x);
         int iy = (int) Math.floor(pos.y - 0.5);
         int iz = (int) Math.floor(pos.z);
 
         Object blockObj = world.getBlock(ix, iy, iz);
-
-        // 2. DETECCIÓN DE SUELO
         boolean isFloor = isSolidFloor(blockObj);
-
-        // --- NUEVA REGLA DE SEGURIDAD POR TIEMPO ---
-        // Ignoramos el suelo solo durante los primeros 10 ticks (medio segundo)
-        // para evitar que se detenga en el mismo aire donde spawneó.
-        // Después de eso, detectará cualquier bloque sólido a cualquier altura.
         if (falling.ticksExisted < 10) {
             isFloor = false;
         }
@@ -81,11 +68,8 @@ public class DropFallingSystem extends EntityTickingSystem<EntityStore> {
             commandBuffer.putComponent(archetypeChunk.getReferenceTo(i), FallingDropComponent.getComponentType(), falling);
         }
         else {
-            // 4. ATERRIZAJE
-            // Debug: Nos dice qué bloque lo detuvo
             String finalBlock = (blockObj != null) ? blockObj.toString() : "NULL";
 
-            // Ponemos el cofre un bloque por encima del suelo detectado (iy + 1)
             landing(world, ix, iy + 1, iz, archetypeChunk.getReferenceTo(i), commandBuffer, finalBlock);
         }
     }
@@ -93,7 +77,6 @@ public class DropFallingSystem extends EntityTickingSystem<EntityStore> {
     private boolean isSolidFloor(Object block) {
         if (block == null) return false;
 
-        // Intentamos detectar por metodos nativos
         try {
             Method isAir = block.getClass().getMethod("isAir");
             if ((boolean) isAir.invoke(block)) return false;
@@ -101,26 +84,25 @@ public class DropFallingSystem extends EntityTickingSystem<EntityStore> {
 
         String name = block.toString().toLowerCase();
 
-        // Lista de cosas que NO detendrán el drop (lo atraviesa)
         boolean isNotSolid = name.contains("air") ||
                 name.contains("void") ||
                 name.contains("cloud") ||
                 name.contains("null") ||
                 name.contains("env") ||
                 name.contains("atmosphere") ||
-                name.equals("0"); // Por el error que vimos en tu imagen
+                name.equals("0");
 
         return !isNotSolid;
     }
 
-    private void landing(World world, int x, int y, int z, com.hypixel.hytale.component.Ref<EntityStore> ref, CommandBuffer<EntityStore> cb, String blockName) {
+    private void landing(World world, int x, int y, int z, Ref<EntityStore> ref, CommandBuffer<EntityStore> cb, String blockName) {
         try {
             world.setBlock(x, y, z, "Furniture_Tavern_Chest_Small");
             registry.registerDrop(x, y, z);
             cb.removeEntity(ref, RemoveReason.REMOVE);
 
             Universe.get().getPlayers().forEach(p ->
-                    p.sendMessage(Message.raw("§6§l[HyDrops] §a¡Suministro aterrizado sobre §f" + blockName + "§a!" + "  " + x + "  " + y + "  " + z))
+                    p.sendMessage(Message.raw("[HyDrops] ¡Suministro aterrizado sobre" + "  " + x + "  " + y + "  " + z).color("#0F35F5"))
             );
 
         } catch (Exception e) {

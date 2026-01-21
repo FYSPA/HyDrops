@@ -21,9 +21,12 @@ public class DropTimerSystem extends EntityTickingSystem<EntityStore> {
     private final DropManager dropManager;
     private final Random random = new Random();
 
-    // Ajustes de tiempo
-    private float nextDropTimer = 60.0f; // Primer drop al minuto de iniciar
-    private final float INTERVALO = 1200.0f; // 20 minutos entre drops
+    // Tiempos (En segundos)
+    private float nextDropTimer = 20.0f; // Primer drop al minuto
+    private final float INTERVALO = 420.0f; // 20 minutos
+
+    // --- COMPUERTA DE TIEMPO SEGURA ---
+    private long lastTimestamp = 0;
 
     public DropTimerSystem(DropManager dropManager) {
         this.dropManager = dropManager;
@@ -38,9 +41,11 @@ public class DropTimerSystem extends EntityTickingSystem<EntityStore> {
     public void tick(float dt, int i, @Nonnull ArchetypeChunk<EntityStore> archetypeChunk,
                      @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
 
-        // Solo ejecutamos la lógica una vez por tick global (i == 0)
-        if (i != 0) return;
-
+        long now = System.currentTimeMillis();
+        if (now - lastTimestamp < 45) {
+            return;
+        }
+        lastTimestamp = now;
         nextDropTimer -= dt;
 
         if (nextDropTimer <= 0) {
@@ -50,30 +55,25 @@ public class DropTimerSystem extends EntityTickingSystem<EntityStore> {
     }
 
     private void triggerRandomDrop() {
-        List<PlayerRef> playerRefs = Universe.get().getPlayers();
-        if (playerRefs == null || playerRefs.isEmpty()) return;
+        try {
+            List<PlayerRef> playerRefs = Universe.get().getPlayers();
+            if (playerRefs == null || playerRefs.isEmpty()) return;
 
-        PlayerRef ref = playerRefs.get(random.nextInt(playerRefs.size()));
-        Player target = PlayerUtils.getPlayerFromRef(ref);
+            PlayerRef ref = playerRefs.get(random.nextInt(playerRefs.size()));
+            Player target = PlayerUtils.getPlayerFromRef(ref);
 
-        if (target != null) {
-            Vector3d pPos = PlayerUtils.getPos(target);
-            if (pPos != null) {
-                double fx = pPos.x + (random.nextDouble() - 0.5) * 80;
-                double fz = pPos.z + (random.nextDouble() - 0.5) * 80;
+            if (target != null) {
+                Vector3d pPos = PlayerUtils.getPos(target);
+                if (pPos != null) {
+                    double fx = pPos.x + (random.nextDouble() - 0.5) * 100;
+                    double fz = pPos.z + (random.nextDouble() - 0.5) * 100;
 
-                // --- MENSAJE CON COORDENADAS ---
-                // Redondeamos a (int) para que no salgan mil decimales en el chat
-                String msg = String.format(
-                        "§6§l[HyDrops] §e¡Suministros detectados cerca de §f%s §een §bX:%d Z:%d§e!",
-                        target.getDisplayName(), (int)fx, (int)fz
-                );
-
-                PlayerUtils.broadcast(msg);
-
-                // Lanzamos el drop
-                dropManager.spawnFallingCrate(target.getWorld(), fx, fz, target);
+                    PlayerUtils.broadcast("[HyDrop] ¡Suministros detectados cayendo en X:" + (int)fx + " Z:" + (int)fz + "!", "#0FF516");
+                    dropManager.spawnFallingCrate(target.getWorld(), fx, fz, target);
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

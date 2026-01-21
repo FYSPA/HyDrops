@@ -18,6 +18,7 @@ import dev.yh.managers.DropRegistry;
 import dev.yh.managers.LootManager;
 import dev.yh.managers.ZoneManager;
 import dev.yh.managers.DropManager;
+import dev.yh.utils.PlayerUtils;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
@@ -54,7 +55,6 @@ public class DropBreakSystem extends EntityEventSystem<EntityStore, BreakBlockEv
         if (player == null) return;
 
         try {
-            // 1. OBTENER POSICIÓN
             Field posField = event.getClass().getDeclaredField("targetBlock");
             posField.setAccessible(true);
             Vector3i blockPos = (Vector3i) posField.get(event);
@@ -64,7 +64,7 @@ public class DropBreakSystem extends EntityEventSystem<EntityStore, BreakBlockEv
                 return;
             }
 
-            // 3. OBTENER ID DEL BLOQUE
+
             Field typeField = event.getClass().getDeclaredField("blockType");
             typeField.setAccessible(true);
             Object blockTypeObj = typeField.get(event);
@@ -74,22 +74,15 @@ public class DropBreakSystem extends EntityEventSystem<EntityStore, BreakBlockEv
 
             if (blockId.toLowerCase().contains("chest") || blockId.toLowerCase().contains("crate")) {
 
-                player.sendMessage(Message.raw("§6[HyDrops] §a¡Suministro abierto!"));
+                player.sendMessage(Message.raw("[HyDrops] ¡Suministro abierto!").color("#13F50F"));
 
                 int zoneId = zoneManager.getPlayerZoneId(player);
                 List<String> loot = lootManager.generateLootForZone(zoneId, 5);
 
                 if (!loot.isEmpty()) {
-                    // --- AQUÍ ESTÁ LA CORRECCIÓN ---
-                    // Obtenemos el mundo desde el jugador
                     World world = player.getWorld();
-
                     Vector3d spawnPos = new Vector3d(blockPos.x + 0.5, blockPos.y + 0.5, blockPos.z + 0.5);
-
-                    // Ahora 'world' ya existe y el compilador estará feliz
                     dropManager.spawnLootBurst(world, spawnPos, loot, player);
-
-                    // 4. LIMPIEZA
                     dropRegistry.unregisterDrop(blockPos.x, blockPos.y, blockPos.z);
                 }
             }

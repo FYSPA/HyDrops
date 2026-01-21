@@ -35,11 +35,12 @@ public class SpawnLootCmd extends AbstractCommand {
 
         this.zoneArg = withOptionalArg("zone", "ID de zona", ArgTypes.INTEGER);
         this.amountArg = withOptionalArg("amount", "Cantidad", ArgTypes.INTEGER);
+        addAliases("items");
     }
 
     @Override
     protected boolean canGeneratePermission() {
-        return false; // Desactiva el candado automático. ¡Público para todos!
+        return false;
     }
 
     @Override
@@ -53,8 +54,6 @@ public class SpawnLootCmd extends AbstractCommand {
         world.execute(() -> {
             Vector3d pos = PlayerUtils.getPos(player);
             if (pos == null) return;
-
-            // 1. Calcular Zona y Cantidad
             int zoneId = zoneArg.provided(context) ? zoneArg.get(context) : zoneManager.getPlayerZoneId(player);
             int amount = amountArg.provided(context) ? amountArg.get(context) : 3;
 
@@ -62,14 +61,11 @@ public class SpawnLootCmd extends AbstractCommand {
             List<String> items = lootManager.generateLootForZone(zoneId, amount);
 
             if (items.isEmpty()) {
-                player.sendMessage(Message.raw("§cError: No hay loot para la zona " + zoneId));
+                PlayerUtils.broadcast("Error: No hay loot para la zona " + zoneId, "#F51E0F");
                 return;
             }
-
-            // 3. CORRECCIÓN: Usar el nuevo nombre y pasar el Vector3d pos
             dropManager.spawnLootBurst(world, pos, items, player);
-
-            player.sendMessage(Message.raw("§b[HyDrops] §a¡Lluvia de items generada!"));
+            player.sendMessage(Message.raw("[HyDrops] ¡Lluvia de items generada!").color("#0FF516"));
         });
 
         return CompletableFuture.completedFuture(null);

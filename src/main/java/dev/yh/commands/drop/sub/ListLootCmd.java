@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalAr
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import dev.yh.managers.LootManager;
 import dev.yh.model.LootEntry;
+import dev.yh.utils.PlayerUtils;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -37,22 +38,20 @@ public class ListLootCmd extends AbstractCommand {
         Map<String, List<LootEntry>> allTables = lootManager.getLootTables();
 
         if (allTables.isEmpty()) {
-            context.sender().sendMessage(Message.raw("§cEl sistema de loot está vacío o no se ha cargado."));
+            PlayerUtils.broadcast( "El sistema de loot está vacío o no se ha cargado.", "#F5DA0F");
             return CompletableFuture.completedFuture(null);
         }
 
-        context.sender().sendMessage(Message.raw("§6--- Configuración de HyDrops ---"));
+        context.sender().sendMessage(Message.raw("--- Configuración de HyDrops ---").color("#EDF50F"));
 
-        // Si el usuario especificó una zona, solo mostramos esa
         if (zoneArg.provided(context)) {
             String targetKey = "zone_" + zoneArg.get(context);
             if (allTables.containsKey(targetKey)) {
                 printZone(context, targetKey, allTables.get(targetKey));
             } else {
-                context.sender().sendMessage(Message.raw("§cLa zona " + targetKey + " no existe en el JSON."));
+                context.sender().sendMessage(Message.raw("La zona " + targetKey + " no existe en el JSON."). color("#F5DA0F"));
             }
         } else {
-            // Si no, mostramos todas las zonas
             allTables.forEach((zone, items) -> printZone(context, zone, items));
         }
 
@@ -60,12 +59,12 @@ public class ListLootCmd extends AbstractCommand {
     }
 
     private void printZone(CommandContext context, String zoneName, List<LootEntry> items) {
-        context.sender().sendMessage(Message.raw("§eID: §f" + zoneName + " §7(" + items.size() + " items)"));
+        context.sender().sendMessage(Message.raw("ID: " + zoneName + " (" + items.size() + " items)"));
         for (LootEntry item : items) {
             context.sender().sendMessage(Message.raw(
                     " §8- §b" + item.getId() +
-                            " §7(Cant: " + item.getMin() + "-" + item.getMax() + ") " +
-                            " §6[Peso: " + item.getWeight() + "]"
+                            "(Cant: " + item.getMin() + "-" + item.getMax() + ") " +
+                            "[Peso: " + item.getWeight() + "]"
             ));
         }
     }
