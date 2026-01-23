@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 
 import dev.yh.managers.DropRegistry;
 import dev.yh.model.FallingDropComponent;
+import dev.yh.utils.ParticleUtils;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
@@ -53,6 +54,11 @@ public class DropFallingSystem extends EntityTickingSystem<EntityStore> {
         boolean isFloor = isSolidFloor(blockObj);
         if (falling.ticksExisted < 10) {
             isFloor = false;
+        }
+
+        if (falling.ticksExisted % 5 == 0) {
+            // Usamos el efecto que tienes o uno que sea una columna de luz
+            ParticleUtils.spawnGlobalEffect("Drop_Rare", pos, store);
         }
 
         // 3. LÓGICA DE MOVIMIENTO
@@ -104,6 +110,9 @@ public class DropFallingSystem extends EntityTickingSystem<EntityStore> {
             Universe.get().getPlayers().forEach(p ->
                     p.sendMessage(Message.raw("[HyDrops] ¡Suministro aterrizado sobre" + "  " + x + "  " + y + "  " + z).color("#0F35F5"))
             );
+
+            Vector3d landingPos = new Vector3d(x + 0.5, y + 1.0, z + 0.5);
+            ParticleUtils.spawnGlobalEffect("Drop_Rare", landingPos, world.getEntityStore().getStore());
 
         } catch (Exception e) {
             e.printStackTrace();

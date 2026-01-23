@@ -29,7 +29,7 @@ public class DumpItemsCmd extends AbstractCommand {
 
     @Override
     protected boolean canGeneratePermission() {
-        return false; // Desactiva el candado automático. ¡Público para todos!
+        return false;
     }
 
     @Override

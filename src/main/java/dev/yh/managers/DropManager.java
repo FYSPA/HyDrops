@@ -20,16 +20,18 @@ import java.util.List;
 
 public class DropManager {
 
+    private final EffectManager effectManager;
     private static final int MAX_ITEMS_PER_DROP = 3;
     private static final double SPREAD_RADIUS = 2.0;
 
-    /**
-     * Crea la entidad de la caja que caerá del cielo.
-     */
+    public DropManager(EffectManager effectManager) {
+        this.effectManager = effectManager;
+    }
+
     public void spawnFallingCrate(World world, double x, double z, Player player) {
-        // Usamos la utilidad para la altura
-        int groundY = WorldUtils.getHighestBlockY(world, (int) x, (int) z);
-        Vector3d skyPos = new Vector3d(x + 0.5, 150.0, z + 0.5);
+        int surfaceY = WorldUtils.getHighestBlockY(world, (int) x, (int) z);
+        double spawnY = surfaceY + 50.0;
+        Vector3d skyPos = new Vector3d(x + 0.5, spawnY, z + 0.5);
 
         world.execute(() -> {
             try {
@@ -37,16 +39,22 @@ public class DropManager {
                 TimeResource time = (TimeResource) store.getResource(TimeResource.getResourceType());
 
                 Holder<EntityStore> holder = BlockEntity.assembleDefaultBlockEntity(time, "Furniture_Tavern_Chest_Small", skyPos);
-
                 var type = FallingDropComponent.getComponentType();
                 if (type != null) {
-                    holder.addComponent(type, new FallingDropComponent(0.0)); // 0.0 porque ahora detecta suelo solo
-                    if (player != null) {
-                        PlayerUtils.broadcast( "[HyDrops] ¡Suministro detectado en el cielo!", "#0FF52E");
-                    }
+                    holder.addComponent(type, new FallingDropComponent(0.0));
                 }
-                store.addEntity(holder, AddReason.SPAWN);
-            } catch (Exception e) { e.printStackTrace(); }
+                com.hypixel.hytale.component.Ref<EntityStore> entityRef = store.addEntity(holder, AddReason.SPAWN);
+
+                if (entityRef != null && entityRef.isValid()) {
+                    this.effectManager.applyBeaconEffect(entityRef, "hytale:Drop_Rare");
+                }
+                if (player != null) {
+                    PlayerUtils.broadcast("[HyDrops] ¡Suministro detectado en el cielo!", "#0FF52E");
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
     }
 

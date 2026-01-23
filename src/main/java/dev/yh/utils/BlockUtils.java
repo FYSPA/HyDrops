@@ -22,20 +22,15 @@ public class BlockUtils {
         if (!blockId.contains(":")) blockId = blockId;
 
         try {
-            // 1. OBTENER RECURSO DE TIEMPO (Requisito del motor)
-            // Extraído de: world.getEntityStore().getStore().getResource(...)
             TimeResource timeResource = (TimeResource) world.getEntityStore().getStore()
                     .getResource(TimeResource.getResourceType());
 
-            // 2. ENSAMBLAR LA ENTIDAD DEL BLOQUE
-            // Esto crea el "Holder" con los componentes base
             Holder<EntityStore> blockEntityHolder = BlockEntity.assembleDefaultBlockEntity(
                     timeResource,
                     blockId,
                     pos
             );
 
-            // 3. CONFIGURAR POSICIÓN Y ROTACIÓN
             TransformComponent transform = (TransformComponent) blockEntityHolder.ensureAndGetComponent(TransformComponent.getComponentType());
             transform.setPosition(pos);
             transform.setRotation(Vector3f.ZERO); // Rotación estándar

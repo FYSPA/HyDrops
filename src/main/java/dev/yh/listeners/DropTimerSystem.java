@@ -23,7 +23,7 @@ public class DropTimerSystem extends EntityTickingSystem<EntityStore> {
 
     // Tiempos (En segundos)
     private float nextDropTimer = 20.0f; // Primer drop al minuto
-    private final float INTERVALO = 420.0f; // 20 minutos
+    private final float INTERVALO = 40.0f; // 20 minutos
 
     // --- COMPUERTA DE TIEMPO SEGURA ---
     private long lastTimestamp = 0;
